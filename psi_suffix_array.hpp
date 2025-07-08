@@ -16,11 +16,10 @@ class PsiSuffixArray
 public:
     PsiSuffixArray(const std::string& s, const std::vector<int> &suffix_array, int compress_step, int sample_step);
 
-    void printPsi() const;
-
     void printMemorySize() const;
 
-    int getSuffix(const std::string &query) const;
+    int findPsiIndexForQuery(const std::string &query) const;
+    int getTextIndexFromPsiIndex(int index) const;
 
 private:
     std::array<Region, 256> regions;
@@ -29,15 +28,13 @@ private:
     std::vector<unsigned char> sampled_chars;
     int compress_step;
     int sample_step;
-    int longest_idx;
     int psi_size;
     int sample_char_step = 128;
 
     void convertToPsi(const std::string &s, const std::vector<int> &suffix_array);
     void compressPsi(const std::vector<int> &psi);
     void sampleSuffixArray(const std::vector<int> &suffix_array);
-    int getPsi(unsigned char c, int index) const;
-    int getIndex(const std::string &query) const;
-    int getCharRegion(int index) const;
+    int getPsiValue(unsigned char c, int index) const;
+    int getFirstCharForPsiIndex(int index) const;
 };
 

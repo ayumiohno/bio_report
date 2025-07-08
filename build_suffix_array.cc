@@ -11,12 +11,11 @@ using std::endl;
 using std::string;
 using std::vector;
 
-// 2-digit radix sort for suffix array
-void radixSortForSuffixArray(const vector<int> &rank, vector<int> &bucket, int step)
+/// Performs 2-digit radix sort on suffix indices using rank pairs (rank[i], rank[i + step]).
+/// First sorts by the second key (rank[i + step]), then by the first key (rank[i]).
+/// Result is stored in `bucket`.
+void radixSortByRankPair(const vector<int> &rank, vector<int> &bucket, int step, int max_rank)
 {
-    // int max_rank = std::max((int)rank.size() + 1, 256);
-    int max_rank = *std::max_element(rank.begin(), rank.end()) + 1;
-
     vector<int> count(max_rank, 0);
     vector<int> lsd_bucket(rank.size(), 0);
 
@@ -67,8 +66,9 @@ bool isSameRankWithPrev(const vector<int> &rank, const vector<int> &bucket, int 
 // Compare the suffix at suffix_pos with the query string
 // Returns:
 // 0   if the suffix matches the query
+// > 0 if the suffix is greater than the query
 // < 0 if the suffix is less than the query
-// > 1 if the suffix is greater than the query
+// 2   if the suffix is a prefix of the query (e.g., "ippi$" and "ipp")
 int compareSuffix(const string& s, int suffix_pos, const string& query) {
     int i = 0;
     while (i < query.size() && (suffix_pos + i) < s.size()) {
@@ -78,7 +78,6 @@ int compareSuffix(const string& s, int suffix_pos, const string& query) {
     }
     if (i == query.size()) {
         if (suffix_pos + i < s.size() - 1) { 
-            // ex) ippi$ and ipp
             return 2;
         }
         return 0;
@@ -91,7 +90,17 @@ SuffixArray::SuffixArray(const string &s) : s(s)
     buildSuffixArray();
 }
 
-// Build suffix array using Manber-Myers algorithm
+SuffixArray::SuffixArray(const string &s, const vector<int> &suffix_array) 
+    : s(s), suffix_array(suffix_array)
+{
+    if (suffix_array.size() != s.size()) {
+        throw std::invalid_argument("Suffix array size must match string size.");
+    }
+}
+
+/// Constructs the suffix array using the Manber-Myers algorithm.
+/// Initializes ranks based on characters, then performs stable radix sort
+/// and rank doubling until the full suffix array is computed.
 void SuffixArray::buildSuffixArray()
 {
     int n = s.size();
@@ -105,11 +114,16 @@ void SuffixArray::buildSuffixArray()
 
     for (int step = 1; step < n; step *= 2)
     {
-        radixSortForSuffixArray(rank, bucket, step);
+        int max_rank = *std::max_element(rank.begin(), rank.end()) + 1;
+        if (max_rank == rank.size() + 1) {
+            cout << "All ranks are unique, no need to sort further." << " " << step << endl;
+            break; // All ranks are unique, no need to sort further
+        }
+        radixSortByRankPair(rank, bucket, step, max_rank);
 
         // Update ranks
         vector<int> next_rank(n, 0);
-        next_rank[bucket[0]] = 0;
+        next_rank[bucket[0]] = 1;
         for (int i = 1; i < n; i++)
         {
             next_rank[bucket[i]] = next_rank[bucket[i - 1]] + !isSameRankWithPrev(rank, bucket, i, step, n);
@@ -119,16 +133,10 @@ void SuffixArray::buildSuffixArray()
     suffix_array = bucket;
 }
 
-void SuffixArray::printSuffixArray() const
-{
-    cout << "index\tsa\tsuffix\n";
-    for (int i = 0; i < suffix_array.size(); i++)
-    {
-        cout << i << ":\t" << suffix_array[i] << "\t" << s.substr(suffix_array[i]) << '\n';
-    }
-}
-
-int SuffixArray::getIndex(const string &query) const
+/// Searches for `query` using binary search on the suffix array.
+/// Returns the starting index in the original string `s` where the match occurs,
+/// or a partial match if available, or -1 otherwise.
+int SuffixArray::findTextIndexByQuery(const string &query) const
 {
     int left = 0, right = suffix_array.size() - 1;
     int partial_match_index = -1;
@@ -150,6 +158,5 @@ int SuffixArray::getIndex(const string &query) const
 
 void SuffixArray::printMemorySize() const
 {
-    cout << "Suffix array capacity: " << suffix_array.capacity() * sizeof(int) << " bytes" << endl;
-    cout << "Suffix array size: " << suffix_array.size() * sizeof(int) << " bytes" << endl;
+    cout << suffix_array.size() * sizeof(int) << endl;
 }

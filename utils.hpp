@@ -18,6 +18,30 @@ bool readFile(const std::string& filename, std::string& content) {
     return true;
 }
 
+bool readSuffixArray(const std::string& filename, std::vector<int>& suffix_array) {
+    std::ifstream file(filename);
+    if (!file) {
+        std::cerr << "Error: Cannot open file " << filename << std::endl;
+        return false;
+    }
+
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    std::istringstream ss(buffer.str());
+    std::string line;
+    while (std::getline(ss, line)) {
+        if (!line.empty()) {
+            try {
+                suffix_array.push_back(std::stoi(line));
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Error: Invalid suffix array entry '" << line << "'" << std::endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 std::string normalize_to_ascii(const std::string& input) {
     std::string result;
     for (unsigned char c : input) {
@@ -37,13 +61,4 @@ bool checkSuffixArray(const std::string& s, const std::vector<int>& sa) {
         }
     }
     return true;
-}
-
-int getLogN(int n) {
-    if (n <= 1) return 1;
-
-    double log2n = std::log2(n);
-    double loglog2n = std::log2(log2n);
-    int k = static_cast<int>(std::round(loglog2n));
-    return 1 << k;
 }

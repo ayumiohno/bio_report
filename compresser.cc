@@ -47,35 +47,6 @@ bool Compresser::readBit(int &pos, bool &bit) const
     return true;
 }
 
-bool Compresser::getValues(std::vector<int> &values) const
-{
-    int pos = 0;
-    values.push_back(first_value);
-    while (true)
-    {
-        bool bit;
-        int length = 1;
-        while (true)
-        {
-            if (!readBit(pos, bit))
-                return false;
-            if (bit)
-                break;
-            ++length;
-        }
-        int x = 1 << (length - 1);
-        for (int i = length - 2; i >= 0; --i)
-        {
-            if (!readBit(pos, bit))
-                return false;
-            if (bit)
-                x |= (1 << i);
-        }
-        values.push_back(values.back() + x);
-    }
-    return true;
-}
-
 bool Compresser::getValue(int &value, int index) const
 {
     int pos = 0;

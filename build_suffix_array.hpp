@@ -10,11 +10,11 @@ public:
     std::string s;
 
     SuffixArray(const std::string &s);
+    SuffixArray(const std::string &s, const std::vector<int> &suffix_array);
 
-    void printSuffixArray() const;
     void printMemorySize() const;
 
-    int getIndex(const std::string &query) const;
+    int findTextIndexByQuery(const std::string &query) const;
 
 private:
     void buildSuffixArray();
